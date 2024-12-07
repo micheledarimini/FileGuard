@@ -1,0 +1,76 @@
+# Output delle build
+[Bb]in/
+[Oo]bj/
+[Bb]uild/
+[Rr]elease/
+
+# File di Visual Studio
+.vs/
+*.user
+*.userosscache
+*.suo
+*.userprefs
+
+# File temporanei
+*_i.c
+*_p.c
+*_h.h
+*.ilk
+*.meta
+*.obj
+*.iobj
+*.pch
+*.pdb
+*.ipdb
+*.pgc
+*.pgd
+*.rsp
+*.sbr
+*.tlb
+*.tli
+*.tlh
+*.tmp
+*.tmp_proj
+*_wpftmp.csproj
+*.log
+*.tlog
+*.vspscc
+*.vssscc
+.builds
+*.pidb
+*.svclog
+*.scc
+
+# Cartella Logs
+Logs/
+*.log
+
+# File specifici WPF
+*.baml
+*.resources
+*.Cache
+
+# Pacchetti NuGet
+packages/
+*.nupkg
+*.snupkg
+**/[Pp]ackages/*
+!**/[Pp]ackages/build/
+
+# File di debug
+*.pdb
+*.opendb
+*.opensdf
+
+# File di sistema Windows
+Thumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Eccezioni - File da mantenere
+!*.cs
+!*.xaml
+!*.csproj
+!*.sln
+!*.md
+!.gitignore
