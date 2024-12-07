@@ -6,7 +6,7 @@ chcp 65001 > nul
 
 cls
 echo ===============================================
-echo            COMMIT E BACKUP
+echo     1. SALVA MODIFICHE (COMMIT E BACKUP)
 echo ===============================================
 echo.
 echo STATO ATTUALE:
@@ -82,6 +82,6 @@ echo DETTAGLI COMMIT:
 git log -1 --pretty=format:"ID:    %%h%%nData:  %%ad%%nMsg:   %%s" --date=format:"%%d/%%m/%%Y %%H:%%M:%%S"
 echo.
 echo.
-echo Per vedere tutte le versioni usa: .\show-versions.bat
+echo Per vedere tutte le versioni usa: .\2-show.bat
 echo.
 pause

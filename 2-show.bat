@@ -1,7 +1,11 @@
 @echo off
+cls
 echo ===============================================
-echo            VERSIONI GIT DISPONIBILI
+echo     2. VISUALIZZA VERSIONI DISPONIBILI
 echo ===============================================
+echo.
+echo VERSIONI GIT:
+echo (Dal più recente al più vecchio)
 echo.
 git log --pretty=format:"ID:    %%h%%nData:  %%ad%%nMsg:   %%s%%n-----------------------------------------------" --date=format:"%%d/%%m/%%Y %%H:%%M:%%S"
 echo.
@@ -19,8 +23,15 @@ for %%F in ("D:\FileGuard_Backup\*.zip") do (
     echo -----------------------------------------------
 )
 echo.
+echo ===============================================
+echo               COME PROCEDERE
+echo ===============================================
+echo.
+echo Per salvare una nuova versione:
+echo   .\1-commit.bat
+echo.
 echo Per ripristinare una versione:
-echo 1. Usa il comando .\restore-version.bat
-echo 2. Inserisci l'ID del commit (i primi 7 caratteri, es: ae91e35)
+echo   .\3-restore.bat
+echo   (ti verrà chiesto quale versione ripristinare)
 echo.
 pause
