@@ -44,7 +44,7 @@ echo ESECUZIONE COMMIT E PUSH:
 echo.
 git add .
 git commit -m "!commit_msg!"
-git push origin main
+git push origin master
 
 :: Crea cartella backup se non esiste
 if not exist "D:\FileGuard_Backup" mkdir "D:\FileGuard_Backup"
@@ -63,8 +63,8 @@ echo packages\ >> "!exclude_file!"
 echo *.user >> "!exclude_file!"
 echo *.suo >> "!exclude_file!"
 
-:: Crea lo zip escludendo i file non necessari
-powershell -Command "Get-ChildItem -Path 'D:\FileGuard' -Exclude (Get-Content '!exclude_file!') | Compress-Archive -DestinationPath 'D:\FileGuard_Backup\FileGuard_!timestamp!.zip' -Force"
+:: Crea lo zip usando PowerShell
+powershell -NoProfile -Command "Import-Module Microsoft.PowerShell.Archive -ErrorAction SilentlyContinue; Get-ChildItem -Path 'D:\FileGuard' -Exclude @('.git', '.vs', 'bin', 'obj', 'Build', 'packages', '*.user', '*.suo') | Compress-Archive -DestinationPath 'D:\FileGuard_Backup\FileGuard_!timestamp!.zip' -Force"
 
 :: Rimuove il file di esclusione
 del "!exclude_file!"

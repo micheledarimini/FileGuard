@@ -7,12 +7,14 @@ Il progetto ha una struttura MVVM con:
 - Sistema di persistenza stato (StateManager)
 - Factory per creazione nodi (FileSystemNodeFactory)
 - Sistema di versionamento Git configurato
+- Gestione icone base implementata
 
 ### Componenti Principali
 - StateManager: gestione persistenza stato
 - DirectoryNode: gestione gerarchia e propagazione
 - TreeViewModel: coordinamento UI e logica
 - FileSystemNodeFactory: creazione nodi con stato
+- IconConverter: gestione icone file e cartelle
 
 ### Problemi Risolti
 1. Implementata gestione stato intermedio (quadratini grigi)
@@ -28,12 +30,17 @@ Il progetto ha una struttura MVVM con:
    - Repository Git inizializzato e configurato
    - Script di commit (1-commit.bat) funzionante
    - Backup automatico durante i commit
+9. Implementata gestione base delle icone:
+   - Icone vettoriali per file e cartelle
+   - Sistema di conversione in IconConverter
+   - Struttura pronta per miglioramenti futuri
 
 ### Problemi Pendenti
 1. Tree View:
    - Gestione espansione/collasso nodi da migliorare
    - Aggiornamento automatico quando cambiano i file
    - Mantenimento stato espansione tra le sessioni
+   - Miglioramento icone per rispecchiare Windows Explorer
 
 2. Parte destra (dettagli):
    - Da implementare visualizzazione dettagli
@@ -72,6 +79,7 @@ Il progetto ha una struttura MVVM con:
 - Evitare patch temporanee
 - Gestire correttamente le dipendenze
 - Documentare le scelte implementative
+- Preferire soluzioni semplici e non invasive
 
 ## Struttura Directory
 ```
@@ -103,6 +111,7 @@ Core/
 │   │   ├── NewFilePopup.xaml
 │   │   └── NewFilePopup.xaml.cs
 │   ├── Converters/
+│   │   ├── IconConverter.cs      # Gestione icone
 │   │   └── MonitoringStatusConverter.cs
 │   ├── App.xaml
 │   ├── App.xaml.cs
