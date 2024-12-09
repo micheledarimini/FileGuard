@@ -44,7 +44,7 @@ echo ESECUZIONE COMMIT E PUSH:
 echo.
 git add .
 git commit -m "!commit_msg!"
-git push origin master
+git push origin main
 
 :: Crea cartella backup se non esiste
 if not exist "D:\FileGuard_Backup" mkdir "D:\FileGuard_Backup"
@@ -52,22 +52,9 @@ if not exist "D:\FileGuard_Backup" mkdir "D:\FileGuard_Backup"
 echo.
 echo CREAZIONE BACKUP ZIP:
 echo.
-:: Crea file di esclusione temporaneo
-set "exclude_file=%temp%\exclude.txt"
-echo .git\ > "!exclude_file!"
-echo .vs\ >> "!exclude_file!"
-echo bin\ >> "!exclude_file!"
-echo obj\ >> "!exclude_file!"
-echo Build\ >> "!exclude_file!"
-echo packages\ >> "!exclude_file!"
-echo *.user >> "!exclude_file!"
-echo *.suo >> "!exclude_file!"
 
-:: Crea lo zip usando PowerShell
-powershell -NoProfile -Command "Import-Module Microsoft.PowerShell.Archive -ErrorAction SilentlyContinue; Get-ChildItem -Path 'D:\FileGuard' -Exclude @('.git', '.vs', 'bin', 'obj', 'Build', 'packages', '*.user', '*.suo') | Compress-Archive -DestinationPath 'D:\FileGuard_Backup\FileGuard_!timestamp!.zip' -Force"
-
-:: Rimuove il file di esclusione
-del "!exclude_file!"
+:: Crea lo zip usando PowerShell con bypass della policy
+powershell -NoProfile -ExecutionPolicy Bypass -Command "Compress-Archive -Path 'D:\FileGuard\*' -DestinationPath 'D:\FileGuard_Backup\FileGuard_!timestamp!.zip' -Force"
 
 echo.
 echo ===============================================
