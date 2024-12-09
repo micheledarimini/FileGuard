@@ -22,11 +22,13 @@ namespace FileGuard.Core.UI
 
             string settingsPath = Path.Combine(assemblyPath, "settings.json");
             string statePath = Path.Combine(assemblyPath, "state.json");
+            string defaultMonitorPath = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
             
             var config = new TreeViewModelConfig(
                 settingsPath,
                 statePath,
-                5  // maxDepth
+                defaultMonitorPath,
+                1000  // maxChangeHistoryItems
             );
             
             _viewModel = new TreeViewModel(config);

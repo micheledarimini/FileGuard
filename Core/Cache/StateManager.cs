@@ -16,8 +16,6 @@ namespace FileGuard.Core.Cache
         private readonly object stateLock = new object();
         private bool hasChanges;
         private bool isDisposed;
-        private DateTime lastSave = DateTime.MinValue;
-        private static readonly TimeSpan SaveThrottle = TimeSpan.FromSeconds(2);
         private bool isSaving;
 
         private static readonly JsonSerializerOptions JsonOptions = new()
@@ -242,12 +240,11 @@ namespace FileGuard.Core.Cache
         {
             if (!hasChanges || isDisposed || isSaving) return;
 
-            var now = DateTime.Now;
-            if (now - lastSave < SaveThrottle) return;
-
             try
             {
                 isSaving = true;
+                Trace.WriteLine("[StateManager] Inizio salvataggio stato");
+                
                 string json;
                 lock (stateLock)
                 {
@@ -256,15 +253,50 @@ namespace FileGuard.Core.Cache
                 }
 
                 var tempPath = settingsPath + ".tmp";
-                await File.WriteAllTextAsync(tempPath, json);
+                await File.WriteAllTextAsync(tempPath, json).ConfigureAwait(false);
                 File.Move(tempPath, settingsPath, true);
-                lastSave = now;
-                Trace.WriteLine("[StateManager] SaveStateToDisk: Stato salvato su file");
+                
+                Trace.WriteLine("[StateManager] Stato salvato su file con successo");
             }
             catch (Exception ex)
             {
                 Trace.WriteLine($"[StateManager] Errore salvataggio stato: {ex.Message}");
                 hasChanges = true;
+                throw;
+            }
+            finally
+            {
+                isSaving = false;
+            }
+        }
+
+        public void SaveStateToDisk()
+        {
+            if (!hasChanges || isDisposed || isSaving) return;
+
+            try
+            {
+                isSaving = true;
+                Trace.WriteLine("[StateManager] Inizio salvataggio stato sincrono");
+                
+                string json;
+                lock (stateLock)
+                {
+                    json = JsonSerializer.Serialize(monitoredPaths, JsonOptions);
+                    hasChanges = false;
+                }
+
+                var tempPath = settingsPath + ".tmp";
+                File.WriteAllText(tempPath, json);
+                File.Move(tempPath, settingsPath, true);
+                
+                Trace.WriteLine("[StateManager] Stato salvato su file con successo (sincrono)");
+            }
+            catch (Exception ex)
+            {
+                Trace.WriteLine($"[StateManager] Errore salvataggio stato sincrono: {ex.Message}");
+                hasChanges = true;
+                throw;
             }
             finally
             {
@@ -278,7 +310,7 @@ namespace FileGuard.Core.Cache
 
             try
             {
-                SaveStateToDiskAsync().Wait();
+                SaveStateToDisk();
             }
             finally
             {

@@ -43,9 +43,15 @@ namespace FileGuard.Core.Models
             // Ottieni o crea il root state
             if (!RootStates.TryGetValue(rootPath, out var rootState))
             {
-                rootState = new NodeState { Path = rootPath };
+                rootState = new NodeState 
+                { 
+                    Path = rootPath,
+                    IsChecked = false,
+                    MonitoringStatus = MonitoringStatus.NotMonitored,
+                    IsExpanded = false
+                };
                 RootStates[rootPath] = rootState;
-                Trace.WriteLine($"[MonitoredPaths] Creato nuovo root state: {rootPath}");
+                Trace.WriteLine($"[MonitoredPaths] Creato nuovo root state: {rootPath} => IsChecked: {rootState.IsChecked}, Status: {rootState.MonitoringStatus}");
             }
 
             if (path.Equals(rootPath, StringComparison.OrdinalIgnoreCase))
@@ -79,7 +85,8 @@ namespace FileGuard.Core.Models
                         Path = currentPath,
                         ParentPath = currentState.Path,
                         IsChecked = false,
-                        MonitoringStatus = MonitoringStatus.NotMonitored
+                        MonitoringStatus = MonitoringStatus.NotMonitored,
+                        IsExpanded = false
                     };
                     currentState.ChildStates[currentPath] = childState;
                     Trace.WriteLine($"[MonitoredPaths] Creato nuovo child state: {currentPath} (Parent: {currentState.Path}) => IsChecked: {childState.IsChecked}, Status: {childState.MonitoringStatus}");

@@ -8,6 +8,11 @@ namespace FileGuard.Core.ViewModels
         public string SettingsPath { get; }
 
         /// <summary>
+        /// Percorso del file per il salvataggio dello stato dell'albero
+        /// </summary>
+        public string StatePath { get; }
+
+        /// <summary>
         /// Percorso predefinito per il monitoraggio dei file
         /// </summary>
         public string DefaultMonitorPath { get; }
@@ -24,11 +29,13 @@ namespace FileGuard.Core.ViewModels
 
         public TreeViewModelConfig(
             string settingsPath,
+            string statePath,
             string defaultMonitorPath,
             int maxChangeHistoryItems = 100,
             bool autoLoadMonitoredFolders = true)
         {
             SettingsPath = settingsPath;
+            StatePath = statePath;
             DefaultMonitorPath = defaultMonitorPath;
             MaxChangeHistoryItems = maxChangeHistoryItems;
             AutoLoadMonitoredFolders = autoLoadMonitoredFolders;
