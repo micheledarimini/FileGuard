@@ -4,7 +4,7 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:FileGuard.Core.UI"
-        xmlns:vm="clr-namespace:FileGuard.Core.ViewModels"
+        xmlns:components="clr-namespace:FileGuard.Core.UI.Components"
         xmlns:converters="clr-namespace:FileGuard.Core.UI.Converters"
         mc:Ignorable="d"
         Title="FileGuard" 
@@ -15,88 +15,106 @@
     <Window.Resources>
         <converters:NullToBoolConverter x:Key="NullToBoolConverter"/>
         <converters:IconConverter x:Key="IconConverter"/>
+
+        <!-- Stile pulsante principale -->
+        <Style x:Key="MainButtonStyle" TargetType="Button">
+            <Setter Property="Background" Value="#2196F3"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Padding" Value="25,12"/>
+            <Setter Property="Margin" Value="5"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}"
+                                CornerRadius="6"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" 
+                                            VerticalAlignment="Center"/>
+                            <Border.Effect>
+                                <DropShadowEffect ShadowDepth="2" 
+                                                BlurRadius="4" 
+                                                Opacity="0.2"/>
+                            </Border.Effect>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Background" Value="#1976D2"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Background" Value="#BDBDBD"/>
+                                <Setter Property="Opacity" Value="0.7"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Stile pulsante rimozione -->
+        <Style x:Key="RemoveButtonStyle" TargetType="Button" BasedOn="{StaticResource MainButtonStyle}">
+            <Setter Property="Background" Value="#FF5722"/> <!-- Arancione -->
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="#F4511E"/>
+                </Trigger>
+                <Trigger Property="IsEnabled" Value="False">
+                    <Setter Property="Background" Value="#BDBDBD"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
     </Window.Resources>
     
-    <Grid>
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="*"/>
-            <RowDefinition Height="Auto"/>
-        </Grid.RowDefinitions>
+    <DockPanel>
+        <!-- Area Pulsanti -->
+        <Border DockPanel.Dock="Top" 
+                Background="#F5F5F5" 
+                Padding="15,10">
+            <StackPanel Orientation="Horizontal">
+                <Button Content="Aggiungi Cartella" 
+                        Click="BrowseButton_Click"
+                        Style="{StaticResource MainButtonStyle}"/>
+                <Button Content="Rimuovi Cartella"
+                        Click="RemoveButton_Click"
+                        Style="{StaticResource RemoveButtonStyle}"
+                        IsEnabled="{Binding IsMainFolderSelected}"/>
+            </StackPanel>
+        </Border>
 
-        <ToolBar Grid.Row="0">
-            <Button Content="Aggiungi Cartella" Click="BrowseButton_Click" Padding="8,2"/>
-            <Button Content="Rimuovi" Click="RemoveButton_Click" 
-                    IsEnabled="{Binding SelectedNode, Converter={StaticResource NullToBoolConverter}}"
-                    Padding="8,2" Margin="10,0,0,0"/>
-        </ToolBar>
+        <!-- Statistics Panel -->
+        <components:StatisticsPanel DockPanel.Dock="Top" 
+                                  Height="100" 
+                                  Margin="10"/>
 
-        <Grid Grid.Row="1">
+        <!-- Status Bar -->
+        <StatusBar DockPanel.Dock="Bottom">
+            <TextBlock Text="{Binding SelectedNode.Path}"/>
+        </StatusBar>
+
+        <!-- Main Content -->
+        <Grid>
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="480"/>
                 <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
 
-            <TreeView x:Name="folderTreeView" Grid.Column="0" 
-                      ItemsSource="{Binding MonitoredNodes}"
-                      SelectedItemChanged="FolderTreeView_SelectedItemChanged"
-                      VirtualizingPanel.IsVirtualizing="True"
-                      VirtualizingPanel.VirtualizationMode="Recycling"
-                      ScrollViewer.CanContentScroll="True"
-                      ScrollViewer.IsDeferredScrollingEnabled="True"
-                      Margin="5">
-                <TreeView.Resources>
-                    <HierarchicalDataTemplate DataType="{x:Type vm:FileSystemNodeViewModel}"
-                                            ItemsSource="{Binding Children}">
-                        <StackPanel Orientation="Horizontal">
-                            <CheckBox IsChecked="{Binding IsChecked}" 
-                                    Tag="{Binding}"
-                                    VerticalAlignment="Center"/>
-                            <Image Source="{Binding Path, Converter={StaticResource IconConverter}}"
-                                   Width="16" Height="16" Margin="4,0"/>
-                            <TextBlock Text="{Binding DisplayName}" 
-                                     VerticalAlignment="Center"
-                                     ToolTip="{Binding Path}"/>
-                        </StackPanel>
-                    </HierarchicalDataTemplate>
-                </TreeView.Resources>
+            <!-- Tree View -->
+            <components:MonitoredItemsView Grid.Column="0" 
+                                         DataContext="{Binding}"/>
 
-                <TreeView.ItemContainerStyle>
-                    <Style TargetType="{x:Type TreeViewItem}">
-                        <Setter Property="IsExpanded" Value="{Binding IsExpanded, Mode=TwoWay}"/>
-                        <EventSetter Event="Expanded" Handler="TreeViewItem_Expanded"/>
-                        <EventSetter Event="Collapsed" Handler="TreeViewItem_Collapsed"/>
-                    </Style>
-                </TreeView.ItemContainerStyle>
-            </TreeView>
-
-            <GridSplitter Grid.Column="1" Width="5" 
+            <!-- Splitter -->
+            <GridSplitter Grid.Column="1" 
+                         Width="5" 
                          ResizeBehavior="PreviousAndNext"
                          ResizeDirection="Columns"
                          HorizontalAlignment="Stretch"/>
 
-            <DataGrid Grid.Column="2"
-                     ItemsSource="{Binding FileChanges}"
-                     AutoGenerateColumns="False"
-                     IsReadOnly="True"
-                     EnableRowVirtualization="True"
-                     VirtualizingPanel.IsVirtualizing="True"
-                     VirtualizingPanel.VirtualizationMode="Recycling"
-                     ScrollViewer.CanContentScroll="True"
-                     ScrollViewer.IsDeferredScrollingEnabled="True"
-                     Margin="5">
-                <DataGrid.Columns>
-                    <DataGridTextColumn Header="Timestamp" Binding="{Binding Timestamp}" Width="Auto" MinWidth="120"/>
-                    <DataGridTextColumn Header="Type" Binding="{Binding Type}" Width="Auto" MinWidth="80"/>
-                    <DataGridTextColumn Header="Path" Binding="{Binding Path}" Width="Auto" MinWidth="150"/>
-                    <DataGridTextColumn Header="Description" Binding="{Binding Description}" Width="*" MinWidth="150"/>
-                </DataGrid.Columns>
-            </DataGrid>
+            <!-- Events Grid -->
+            <components:EventsGridView Grid.Column="2" 
+                                     DataContext="{Binding}"/>
         </Grid>
-
-        <StatusBar Grid.Row="2">
-            <TextBlock Text="{Binding SelectedNode.Path}"/>
-        </StatusBar>
-    </Grid>
+    </DockPanel>
 </Window>

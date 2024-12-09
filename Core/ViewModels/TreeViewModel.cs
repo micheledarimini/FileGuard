@@ -1,285 +1,179 @@
-using System;
-using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Runtime.CompilerServices;
+using System.Collections.ObjectModel;
 using System.IO;
-using System.Windows;
-using System.Windows.Threading;
-using System.Diagnostics;
-using FileGuard.Core.Interfaces;
 using FileGuard.Core.Models;
-using FileGuard.Core.State.Selection;
-using FileGuard.Core.Cache;
+using FileGuard.Core.Interfaces;
 using FileGuard.Core.FileSystem;
-using FileGuard.Core.Notifications;
+using System;
+using System.Collections.Generic;
+using System.Windows;
 
 namespace FileGuard.Core.ViewModels
 {
     public class TreeViewModel : INotifyPropertyChanged, IDisposable
     {
-        private readonly IStateManager stateManager;
-        private readonly ISelectionManager selectionManager;
-        private readonly INotificationService notificationService;
-        private readonly IChangeTracker changeTracker;
-        private readonly IFileSystemManager fileSystemManager;
-        private readonly TreeViewModelConfig config;
-        private FileSystemNodeViewModel? selectedNode;
-        private bool isDisposed;
+        private readonly TreeViewModelConfig _config;
+        private readonly IFileSystemMonitor _monitor;
+        private ITreeNode? _selectedNode;
+        private bool _isMainFolderSelected;
+        private ObservableCollection<FileSystemNodeViewModel> _monitoredNodes;
+        private ObservableCollection<FileChangeInfo> _fileChanges;
+        private bool _isDisposed;
 
-        public event PropertyChangedEventHandler? PropertyChanged;
+        public ObservableCollection<FileSystemNodeViewModel> MonitoredNodes => _monitoredNodes;
+        public ObservableCollection<FileChangeInfo> FileChanges => _fileChanges;
 
-        public ObservableCollection<ITreeNode> MonitoredNodes { get; }
-
-        public ObservableCollection<FileChangedEventArgs> FileChanges => changeTracker.Changes;
-
-        public FileSystemNodeViewModel? SelectedNode
+        public ITreeNode? SelectedNode
         {
-            get => selectedNode;
+            get => _selectedNode;
             set
             {
-                if (selectedNode != value)
+                if (_selectedNode != value)
                 {
-                    selectedNode = value;
-                    OnPropertyChanged(nameof(SelectedNode));
+                    _selectedNode = value;
+                    OnPropertyChanged();
+                    UpdateIsMainFolderSelected();
                 }
+            }
+        }
+
+        public bool IsMainFolderSelected
+        {
+            get => _isMainFolderSelected;
+            private set
+            {
+                if (_isMainFolderSelected != value)
+                {
+                    _isMainFolderSelected = value;
+                    OnPropertyChanged();
+                }
+            }
+        }
+
+        private void UpdateIsMainFolderSelected()
+        {
+            if (_selectedNode is FileSystemNodeViewModel node)
+            {
+                IsMainFolderSelected = node.IsDirectory && node.Parent == null;
+            }
+            else
+            {
+                IsMainFolderSelected = false;
             }
         }
 
         public TreeViewModel(TreeViewModelConfig config)
         {
-            this.config = config ?? throw new ArgumentNullException(nameof(config));
-            
-            var stateManagerConfig = new StateManagerConfig(config.SettingsPath);
-            this.stateManager = new StateManager(stateManagerConfig);
-            this.selectionManager = new SelectionManager(this.stateManager);
-            this.notificationService = new NotificationManager();
-            this.changeTracker = new ChangeTracker(Application.Current.Dispatcher, config.MaxChangeHistoryItems);
-            
-            // Inizializza FileSystemManager
-            this.fileSystemManager = new FileSystemManager(
-                config.SettingsPath,
-                stateManager,
-                selectionManager,
-                Application.Current.Dispatcher
-            );
-
-            // Sottoscrivi agli eventi di filesystem
-            this.fileSystemManager.FileSystemChanged += HandleFileSystemChanged;
-            
-            MonitoredNodes = new ObservableCollection<ITreeNode>();
-
-            if (config.AutoLoadMonitoredFolders)
-            {
-                LoadMonitoredFolders();
-            }
+            _config = config;
+            _monitoredNodes = new ObservableCollection<FileSystemNodeViewModel>();
+            _fileChanges = new ObservableCollection<FileChangeInfo>();
+            _monitor = new FileSystemMonitor();
+            _monitor.FileSystemChanged += OnFileSystemChanged;
+            IsMainFolderSelected = false;
+            LoadState();
         }
 
         public void AddFolder(string path)
         {
-            if (string.IsNullOrEmpty(path)) return;
+            var node = new FileSystemNodeViewModel(path);
+            _monitoredNodes.Add(node);
+            _monitor.StartMonitoring(path);
+            SaveState();
+        }
 
-            try
+        public void RemoveFolder(ITreeNode node)
+        {
+            if (node is FileSystemNodeViewModel fsNode && fsNode.Parent == null)
             {
-                Debug.WriteLine($"[Tree] Aggiunta cartella: {path}");
-                var info = new DirectoryInfo(path);
-                if (info.Exists)
-                {
-                    var node = new FileSystemNodeViewModel(path, info, stateManager);
-                    MonitoredNodes.Add(node);
-                    stateManager.AddMonitoredPath(path);
-                    fileSystemManager.StartMonitoring(path);
-                    SaveStateAsync();
-                }
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine($"[Tree] Errore aggiunta cartella {path}: {ex.Message}");
-                notificationService.ShowMessage(
-                    $"Errore nell'aggiunta della cartella: {ex.Message}",
-                    "Errore",
-                    NotificationType.Error
-                );
+                _monitor.StopMonitoring(fsNode.Path);
+                _monitoredNodes.Remove(fsNode);
+                SaveState();
             }
         }
 
-        public void RemoveFolder(ITreeNode? node)
+        private void OnFileSystemChanged(object? sender, FileSystemEventArgs e)
         {
-            if (node == null) return;
+            Application.Current.Dispatcher.Invoke(() =>
+            {
+                // Aggiorna il nodo corrispondente nel tree
+                UpdateNodeForPath(e.FullPath);
 
-            try
-            {
-                Debug.WriteLine($"[Tree] Rimozione cartella: {node.Path}");
-                MonitoredNodes.Remove(node);
-                stateManager.RemoveMonitoredPath(node.Path);
-                fileSystemManager.StopMonitoring(node.Path);
-                SaveStateAsync();
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine($"[Tree] Errore rimozione cartella {node.Path}: {ex.Message}");
-                notificationService.ShowMessage(
-                    $"Errore nella rimozione della cartella: {ex.Message}",
-                    "Errore",
-                    NotificationType.Error
-                );
-            }
+                // Aggiungi l'evento alla lista
+                var changeInfo = new FileChangeInfo
+                {
+                    Timestamp = DateTime.Now,
+                    Path = e.FullPath,
+                    Type = e.ChangeType.ToString(),
+                    Description = GetChangeDescription(e)
+                };
+
+                _fileChanges.Insert(0, changeInfo);
+
+                // Mantieni solo gli ultimi 1000 eventi
+                while (_fileChanges.Count > 1000)
+                {
+                    _fileChanges.RemoveAt(_fileChanges.Count - 1);
+                }
+            });
         }
 
-        private void LoadMonitoredFolders()
+        private void UpdateNodeForPath(string path)
         {
-            try
+            foreach (var node in _monitoredNodes)
             {
-                Debug.WriteLine("[Tree] Caricamento cartelle monitorate");
-                var paths = stateManager.GetMonitoredPaths();
-                foreach (var path in paths)
+                if (path.StartsWith(node.Path, StringComparison.OrdinalIgnoreCase))
                 {
-                    if (Directory.Exists(path))
-                    {
-                        var info = new DirectoryInfo(path);
-                        var node = new FileSystemNodeViewModel(path, info, stateManager);
-                        MonitoredNodes.Add(node);
-                        fileSystemManager.StartMonitoring(path);
-                        Debug.WriteLine($"[Tree] Caricata cartella: {path}");
-                    }
-                    else
-                    {
-                        Debug.WriteLine($"[Tree] Cartella non trovata: {path}");
-                    }
+                    node.LoadChildren(true);
+                    break;
                 }
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine($"[Tree] Errore caricamento cartelle: {ex.Message}");
-                notificationService.ShowMessage(
-                    $"Errore nel caricamento delle cartelle: {ex.Message}",
-                    "Errore",
-                    NotificationType.Error
-                );
-            }
-        }
-
-        private void HandleFileSystemChanged(object? sender, FileSystemEventArgs e)
-        {
-            try
-            {
-                Debug.WriteLine($"[Tree] Cambiamento filesystem: {e.ChangeType} - {e.FullPath}");
-
-                // Traccia il cambiamento
-                var description = GetChangeDescription(e);
-                changeTracker.TrackChange(e.FullPath, e.ChangeType.ToString(), description);
-
-                // Trova e aggiorna il nodo appropriato
-                var parentPath = Path.GetDirectoryName(e.FullPath);
-                if (!string.IsNullOrEmpty(parentPath))
-                {
-                    var node = FindNode(parentPath);
-                    if (node is FileSystemNodeViewModel fsNode)
-                    {
-                        Application.Current.Dispatcher.BeginInvoke(new Action(() =>
-                        {
-                            fsNode.LoadChildren(true); // Forza il ricaricamento
-                        }));
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine($"[Tree] Errore gestione cambiamento filesystem: {ex.Message}");
             }
         }
 
         private string GetChangeDescription(FileSystemEventArgs e)
         {
-            var fileName = Path.GetFileName(e.FullPath);
             return e.ChangeType switch
             {
-                WatcherChangeTypes.Created => $"Nuovo elemento creato: {fileName}",
-                WatcherChangeTypes.Deleted => $"Elemento eliminato: {fileName}",
-                WatcherChangeTypes.Changed => $"Elemento modificato: {fileName}",
-                WatcherChangeTypes.Renamed => e is RenamedEventArgs re ?
-                    $"Elemento rinominato da {Path.GetFileName(re.OldFullPath)} a {fileName}" :
-                    $"Elemento rinominato: {fileName}",
-                _ => $"Cambiamento rilevato: {fileName}"
+                WatcherChangeTypes.Created => $"Creato nuovo {(Directory.Exists(e.FullPath) ? "cartella" : "file")}",
+                WatcherChangeTypes.Deleted => "Elemento eliminato",
+                WatcherChangeTypes.Changed => "Contenuto modificato",
+                WatcherChangeTypes.Renamed => e is RenamedEventArgs re ? $"Rinominato da {Path.GetFileName(re.OldFullPath)}" : "Elemento rinominato",
+                _ => "Modifica non specificata"
             };
-        }
-
-        private ITreeNode? FindNode(string path)
-        {
-            foreach (var node in MonitoredNodes)
-            {
-                if (node.Path.Equals(path, StringComparison.OrdinalIgnoreCase))
-                    return node;
-
-                if (node.IsDirectory)
-                {
-                    var found = FindNodeInChildren(node, path);
-                    if (found != null)
-                        return found;
-                }
-            }
-            return null;
-        }
-
-        private ITreeNode? FindNodeInChildren(ITreeNode parent, string path)
-        {
-            foreach (var child in parent.Children)
-            {
-                if (child.Path.Equals(path, StringComparison.OrdinalIgnoreCase))
-                    return child;
-
-                if (child.IsDirectory)
-                {
-                    var found = FindNodeInChildren(child, path);
-                    if (found != null)
-                        return found;
-                }
-            }
-            return null;
-        }
-
-        private async void SaveStateAsync()
-        {
-            try
-            {
-                await stateManager.SaveStateToDiskAsync();
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine($"[Tree] Errore salvataggio stato: {ex.Message}");
-                notificationService.ShowMessage(
-                    $"Errore nel salvataggio dello stato: {ex.Message}",
-                    "Errore",
-                    NotificationType.Error
-                );
-            }
-        }
-
-        protected virtual void OnPropertyChanged(string propertyName)
-        {
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
 
         public void SaveState()
         {
-            SaveStateAsync();
+            // TODO: Implementare la logica di salvataggio
+        }
+
+        private void LoadState()
+        {
+            // TODO: Implementare la logica di caricamento
+        }
+
+        public event PropertyChangedEventHandler? PropertyChanged;
+
+        protected virtual void OnPropertyChanged([CallerMemberName] string? propertyName = null)
+        {
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
 
         public void Dispose()
         {
-            if (isDisposed) return;
-
-            try
+            if (!_isDisposed)
             {
-                if (fileSystemManager is IDisposable disposableManager)
-                {
-                    disposableManager.Dispose();
-                }
+                _monitor.Dispose();
+                _isDisposed = true;
             }
-            finally
-            {
-                isDisposed = true;
-            }
-
-            GC.SuppressFinalize(this);
         }
+    }
+
+    public class FileChangeInfo
+    {
+        public DateTime Timestamp { get; set; }
+        public string Path { get; set; } = "";
+        public string Type { get; set; } = "";
+        public string Description { get; set; } = "";
     }
 }

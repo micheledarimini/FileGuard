@@ -1,207 +1,71 @@
 using System;
-using System.IO;
 using System.Windows;
-using System.Windows.Controls;
+using System.IO;
 using FileGuard.Core.ViewModels;
-using FileGuard.Core.Models;
-using WinForms = System.Windows.Forms;
-using MessageBox = System.Windows.MessageBox;
-using System.Diagnostics;
+using FileGuard.Core.UI.Components;
 
 namespace FileGuard.Core.UI
 {
     public partial class MainWindow : Window
     {
-        private readonly TreeViewModel viewModel;
-        private readonly string settingsPath;
-        private bool isClosing;
+        private readonly TreeViewModel _viewModel;
 
         public MainWindow()
         {
             InitializeComponent();
-            Debug.WriteLine("Inizializzazione MainWindow");
+            
+            string? assemblyPath = Path.GetDirectoryName(
+                System.Reflection.Assembly.GetExecutingAssembly().Location);
 
-            settingsPath = Path.Combine(
-                AppDomain.CurrentDomain.BaseDirectory,
-                "fileguard_settings.json"
-            );
+            if (assemblyPath == null)
+                assemblyPath = AppDomain.CurrentDomain.BaseDirectory;
 
-            var defaultPath = Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
-                "Documents"
-            );
-
+            string settingsPath = Path.Combine(assemblyPath, "settings.json");
+            string statePath = Path.Combine(assemblyPath, "state.json");
+            
             var config = new TreeViewModelConfig(
-                settingsPath: settingsPath,
-                defaultMonitorPath: defaultPath,
-                maxChangeHistoryItems: 100,
-                autoLoadMonitoredFolders: true
+                settingsPath,
+                statePath,
+                5  // maxDepth
             );
-
-            viewModel = new TreeViewModel(config);
-            DataContext = viewModel;
-
-            Debug.WriteLine("MainWindow inizializzata");
-
-            // Aggiungi handler per il debug dei checkbox
-            if (Debugger.IsAttached)
-            {
-                folderTreeView.AddHandler(
-                    System.Windows.Controls.CheckBox.CheckedEvent,
-                    new RoutedEventHandler(CheckBox_StateChanged)
-                );
-                folderTreeView.AddHandler(
-                    System.Windows.Controls.CheckBox.UncheckedEvent,
-                    new RoutedEventHandler(CheckBox_StateChanged)
-                );
-                folderTreeView.AddHandler(
-                    System.Windows.Controls.CheckBox.IndeterminateEvent,
-                    new RoutedEventHandler(CheckBox_StateChanged)
-                );
-            }
-        }
-
-        private void CheckBox_StateChanged(object sender, RoutedEventArgs e)
-        {
-            if (e.OriginalSource is System.Windows.Controls.CheckBox checkBox &&
-                checkBox.Tag is FileSystemNodeViewModel node)
-            {
-                Debug.WriteLine($"Checkbox stato cambiato - Nodo: {node.Path}, Stato: {checkBox.IsChecked}, MonitoringStatus: {node.MonitoringStatus}");
-            }
+            
+            _viewModel = new TreeViewModel(config);
+            DataContext = _viewModel;
         }
 
         private void BrowseButton_Click(object sender, RoutedEventArgs e)
         {
-            try
+            var dialog = new System.Windows.Forms.FolderBrowserDialog
             {
-                using var dialog = new WinForms.FolderBrowserDialog
-                {
-                    Description = "Seleziona una cartella da monitorare",
-                    UseDescriptionForTitle = true,
-                    ShowNewFolderButton = true
-                };
+                Description = "Seleziona una cartella da monitorare",
+                ShowNewFolderButton = true
+            };
 
-                if (dialog.ShowDialog() == WinForms.DialogResult.OK)
-                {
-                    Debug.WriteLine($"Cartella selezionata: {dialog.SelectedPath}");
-                    viewModel.AddFolder(dialog.SelectedPath);
-                }
-            }
-            catch (Exception ex)
+            if (dialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
             {
-                LogError("BrowseButton_Click", ex);
-                MessageBox.Show(
-                    $"Errore durante la selezione della cartella: {ex.Message}",
-                    "Errore",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Error
-                );
+                _viewModel.AddFolder(dialog.SelectedPath);
             }
         }
 
         private void RemoveButton_Click(object sender, RoutedEventArgs e)
         {
-            try
+            if (_viewModel.SelectedNode != null)
             {
-                if (viewModel.SelectedNode != null)
+                var popup = new DeleteConfirmationPopup(_viewModel.SelectedNode.Path);
+                popup.DeleteConfirmed += (s, confirmed) =>
                 {
-                    Debug.WriteLine($"Rimozione cartella richiesta: {viewModel.SelectedNode.Path}");
-                    viewModel.RemoveFolder(viewModel.SelectedNode);
-                }
-            }
-            catch (Exception ex)
-            {
-                LogError("RemoveButton_Click", ex);
-                MessageBox.Show(
-                    $"Errore durante la rimozione della cartella: {ex.Message}",
-                    "Errore",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Error
-                );
+                    if (confirmed)
+                    {
+                        _viewModel.RemoveFolder(_viewModel.SelectedNode);
+                    }
+                };
+                popup.ShowDialog();
             }
         }
 
-        private void FolderTreeView_SelectedItemChanged(object sender, RoutedPropertyChangedEventArgs<object> e)
+        private void MainWindow_Closing(object sender, System.ComponentModel.CancelEventArgs e)
         {
-            try
-            {
-                if (e.NewValue is FileSystemNodeViewModel node)
-                {
-                    Debug.WriteLine($"Selezione cambiata: {node.Path}");
-                    viewModel.SelectedNode = node;
-                }
-            }
-            catch (Exception ex)
-            {
-                LogError("FolderTreeView_SelectedItemChanged", ex);
-            }
-        }
-
-        private void TreeViewItem_Expanded(object sender, RoutedEventArgs e)
-        {
-            try
-            {
-                if (sender is TreeViewItem item && item.DataContext is FileSystemNodeViewModel node)
-                {
-                    Debug.WriteLine($"Nodo espanso: {node.Path}");
-                    node.LoadChildren();
-                }
-            }
-            catch (Exception ex)
-            {
-                LogError("TreeViewItem_Expanded", ex);
-            }
-        }
-
-        private void TreeViewItem_Collapsed(object sender, RoutedEventArgs e)
-        {
-            try
-            {
-                if (sender is TreeViewItem item && item.DataContext is FileSystemNodeViewModel node)
-                {
-                    Debug.WriteLine($"Nodo collassato: {node.Path}");
-                    e.Handled = true;
-                }
-            }
-            catch (Exception ex)
-            {
-                LogError("TreeViewItem_Collapsed", ex);
-            }
-        }
-
-        private void MainWindow_Closing(object? sender, System.ComponentModel.CancelEventArgs e)
-        {
-            if (isClosing) return;
-            isClosing = true;
-
-            try
-            {
-                Debug.WriteLine("Salvataggio stato applicazione");
-                viewModel.SaveState();
-            }
-            catch (Exception ex)
-            {
-                LogError("MainWindow_Closing", ex);
-                MessageBox.Show(
-                    $"Errore durante il salvataggio delle impostazioni: {ex.Message}",
-                    "Errore",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Error
-                );
-            }
-        }
-
-        private void LogError(string context, Exception ex)
-        {
-            Debug.WriteLine($"Errore in {context}: {ex}");
-            try
-            {
-                File.AppendAllText(
-                    Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "fileguard_error.log"),
-                    $"{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff} - {context}: {ex}\n"
-                );
-            }
-            catch { }
+            _viewModel.SaveState();
         }
     }
 }
