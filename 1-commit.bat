@@ -44,7 +44,7 @@ echo ESECUZIONE COMMIT E PUSH:
 echo.
 git add .
 git commit -m "!commit_msg!"
-git push origin main
+git push origin master
 
 :: Crea cartella backup se non esiste
 if not exist "D:\FileGuard_Backup" mkdir "D:\FileGuard_Backup"
@@ -62,6 +62,9 @@ echo Build\ >> "!exclude_file!"
 echo packages\ >> "!exclude_file!"
 echo *.user >> "!exclude_file!"
 echo *.suo >> "!exclude_file!"
+
+:: Importa il modulo PowerShell Archive
+powershell -Command "Import-Module Microsoft.PowerShell.Archive -UseWindowsPowerShell"
 
 :: Crea lo zip escludendo i file non necessari
 powershell -Command "Get-ChildItem -Path 'D:\FileGuard' -Exclude (Get-Content '!exclude_file!') | Compress-Archive -DestinationPath 'D:\FileGuard_Backup\FileGuard_!timestamp!.zip' -Force"
