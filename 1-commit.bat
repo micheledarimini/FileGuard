@@ -63,11 +63,8 @@ echo packages\ >> "!exclude_file!"
 echo *.user >> "!exclude_file!"
 echo *.suo >> "!exclude_file!"
 
-:: Importa il modulo PowerShell Archive
-powershell -Command "Import-Module Microsoft.PowerShell.Archive -UseWindowsPowerShell"
-
-:: Crea lo zip escludendo i file non necessari
-powershell -Command "Get-ChildItem -Path 'D:\FileGuard' -Exclude (Get-Content '!exclude_file!') | Compress-Archive -DestinationPath 'D:\FileGuard_Backup\FileGuard_!timestamp!.zip' -Force"
+:: Crea lo zip usando PowerShell
+powershell -NoProfile -Command "Import-Module Microsoft.PowerShell.Archive -ErrorAction SilentlyContinue; Get-ChildItem -Path 'D:\FileGuard' -Exclude @('.git', '.vs', 'bin', 'obj', 'Build', 'packages', '*.user', '*.suo') | Compress-Archive -DestinationPath 'D:\FileGuard_Backup\FileGuard_!timestamp!.zip' -Force"
 
 :: Rimuove il file di esclusione
 del "!exclude_file!"
