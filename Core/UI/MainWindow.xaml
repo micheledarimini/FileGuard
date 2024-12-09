@@ -53,8 +53,8 @@
                             <CheckBox IsChecked="{Binding IsChecked}" 
                                     Tag="{Binding}"
                                     VerticalAlignment="Center"/>
-                            <ContentPresenter Content="{Binding IsDirectory, Converter={StaticResource IconConverter}}"
-                                            Width="16" Height="16" Margin="4,0"/>
+                            <Image Source="{Binding Path, Converter={StaticResource IconConverter}}"
+                                   Width="16" Height="16" Margin="4,0"/>
                             <TextBlock Text="{Binding DisplayName}" 
                                      VerticalAlignment="Center"
                                      ToolTip="{Binding Path}"/>
