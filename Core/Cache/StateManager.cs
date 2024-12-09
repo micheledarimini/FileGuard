@@ -12,7 +12,7 @@ namespace FileGuard.Core.Cache
     public class StateManager : IStateManager, IDisposable
     {
         private readonly string settingsPath;
-        private readonly MonitoredPaths monitoredPaths;
+        private MonitoredPaths monitoredPaths;
         private readonly object stateLock = new object();
         private bool hasChanges;
         private bool isDisposed;
@@ -38,7 +38,12 @@ namespace FileGuard.Core.Cache
 
             lock (stateLock)
             {
-                return monitoredPaths.GetOrCreateState(path);
+                var state = monitoredPaths.GetOrCreateState(path);
+                if (state != null)
+                {
+                    Trace.WriteLine($"[StateManager] GetOrCreateState: {path} => IsChecked: {state.IsChecked}, Status: {state.MonitoringStatus}");
+                }
+                return state;
             }
         }
 
@@ -52,6 +57,7 @@ namespace FileGuard.Core.Cache
                 if (state != null)
                 {
                     hasChanges = true;
+                    Trace.WriteLine($"[StateManager] AddMonitoredPath: {path}");
                 }
             }
         }
@@ -111,11 +117,19 @@ namespace FileGuard.Core.Cache
                 var state = monitoredPaths.GetOrCreateState(path);
                 if (state != null)
                 {
+                    var oldStatus = state.MonitoringStatus;
+                    var oldChecked = state.IsChecked;
+                    
                     state.MonitoringStatus = status;
                     state.IsChecked = isChecked;
                     state.IsExpanded = isExpanded;
                     state.IsDirty = true;
                     hasChanges = true;
+
+                    if (oldStatus != status || oldChecked != isChecked)
+                    {
+                        Trace.WriteLine($"[StateManager] UpdateNodeState: {path} => Status: {oldStatus}->{status}, IsChecked: {oldChecked}->{isChecked}");
+                    }
                 }
             }
         }
@@ -131,6 +145,9 @@ namespace FileGuard.Core.Cache
                 {
                     bool? newChecked = status == MonitoringStatus.FullyMonitored ? true :
                                      status == MonitoringStatus.NotMonitored ? false : null;
+                    
+                    Trace.WriteLine($"[StateManager] UpdateMonitoringStatus: {path} => Status: {status}, NewChecked: {newChecked}");
+                    
                     state.PropagateState(newChecked);
                     hasChanges = true;
                 }
@@ -163,6 +180,23 @@ namespace FileGuard.Core.Cache
                     var state = JsonSerializer.Deserialize<MonitoredPaths>(json, JsonOptions);
                     if (state != null)
                     {
+                        Trace.WriteLine("[StateManager] LoadState: Stato caricato da file");
+                        
+                        // Log della gerarchia prima della validazione
+                        foreach (var rootState in state.RootStates)
+                        {
+                            LogStateHierarchy(rootState.Value, 0);
+                        }
+                        
+                        // Assegna lo stato prima di usarlo
+                        monitoredPaths = state;
+                        
+                        // Carica gli stati dei figli
+                        foreach (var rootState in state.RootStates)
+                        {
+                            LoadChildStates(rootState.Value);
+                        }
+                        
                         state.CleanInvalidPaths();
                         state.ValidateHierarchy();
                         return state;
@@ -171,10 +205,37 @@ namespace FileGuard.Core.Cache
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"Errore caricamento stato: {ex.Message}");
+                Trace.WriteLine($"[StateManager] Errore caricamento stato: {ex.Message}");
             }
 
+            Trace.WriteLine("[StateManager] LoadState: Creato nuovo stato vuoto");
             return new MonitoredPaths();
+        }
+
+        private void LoadChildStates(NodeState state)
+        {
+            if (state.Path == null) return;
+
+            foreach (var child in state.ChildStates.Values)
+            {
+                if (child.Path != null)
+                {
+                    // Assicurati che lo stato sia nel MonitoredPaths
+                    monitoredPaths.GetOrCreateState(child.Path);
+                    LoadChildStates(child);
+                }
+            }
+        }
+
+        private void LogStateHierarchy(NodeState state, int depth)
+        {
+            var indent = new string(' ', depth * 2);
+            Trace.WriteLine($"{indent}[StateManager] Node: {state.Path} => IsChecked: {state.IsChecked}, Status: {state.MonitoringStatus}, ChildCount: {state.ChildStates.Count}");
+            
+            foreach (var child in state.ChildStates.Values)
+            {
+                LogStateHierarchy(child, depth + 1);
+            }
         }
 
         public async Task SaveStateToDiskAsync()
@@ -198,10 +259,11 @@ namespace FileGuard.Core.Cache
                 await File.WriteAllTextAsync(tempPath, json);
                 File.Move(tempPath, settingsPath, true);
                 lastSave = now;
+                Trace.WriteLine("[StateManager] SaveStateToDisk: Stato salvato su file");
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"Errore salvataggio stato: {ex.Message}");
+                Trace.WriteLine($"[StateManager] Errore salvataggio stato: {ex.Message}");
                 hasChanges = true;
             }
             finally

@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Windows.Threading;
 using FileGuard.Core.Interfaces;
+using FileGuard.Core.Models;
 
 namespace FileGuard.Core.ViewModels
 {
@@ -24,9 +25,6 @@ namespace FileGuard.Core.ViewModels
 
             if (IsDirectory)
             {
-                // Aggiungi un nodo dummy per mostrare l'espansione
-                AddChild(new DummyNodeViewModel());
-
                 if (stateManager != null)
                 {
                     var state = stateManager.GetOrCreateState(path);
@@ -34,7 +32,26 @@ namespace FileGuard.Core.ViewModels
                     {
                         UpdateState(state.IsChecked, state.MonitoringStatus);
                         IsExpanded = state.IsExpanded;
+                        
+                        // Se il nodo era espanso, carica subito i figli
+                        if (state.IsExpanded)
+                        {
+                            LoadChildrenFromState(state);
+                        }
+                        else
+                        {
+                            // Altrimenti aggiungi solo il dummy node
+                            AddChild(new DummyNodeViewModel());
+                        }
                     }
+                    else
+                    {
+                        AddChild(new DummyNodeViewModel());
+                    }
+                }
+                else
+                {
+                    AddChild(new DummyNodeViewModel());
                 }
             }
         }
@@ -60,15 +77,10 @@ namespace FileGuard.Core.ViewModels
             }
         }
 
-        public override void LoadChildren(bool forceReload = false)
+        private void LoadChildrenFromState(NodeState state)
         {
-            if (!IsDirectory || (isLoaded && !forceReload)) return;
-
             try
             {
-                var wasExpanded = IsExpanded;
-                ClearChildren();
-
                 var entries = new DirectoryInfo(Path)
                     .EnumerateFileSystemInfos()
                     .OrderBy(info => info is not DirectoryInfo)
@@ -84,7 +96,9 @@ namespace FileGuard.Core.ViewModels
                     if (childState != null)
                     {
                         childNode.UpdateState(childState.IsChecked, childState.MonitoringStatus);
-                        if (childNode.IsDirectory)
+                        
+                        // Se è una directory e ha figli salvati, imposta lo stato di espansione
+                        if (childNode.IsDirectory && childState.ChildStates.Any())
                         {
                             childNode.IsExpanded = childState.IsExpanded;
                         }
@@ -94,6 +108,49 @@ namespace FileGuard.Core.ViewModels
                         childNode.UpdateState(IsChecked, MonitoringStatus);
                     }
 
+                    AddChild(childNode);
+                }
+
+                isLoaded = true;
+            }
+            catch (Exception ex) when (ex is IOException || ex is UnauthorizedAccessException)
+            {
+                ClearChildren();
+                AddChild(new DummyNodeViewModel());
+                isLoaded = false;
+            }
+        }
+
+        public override void LoadChildren(bool forceReload = false)
+        {
+            if (!IsDirectory || (isLoaded && !forceReload)) return;
+
+            try
+            {
+                var wasExpanded = IsExpanded;
+                ClearChildren();
+
+                if (stateManager != null)
+                {
+                    var state = stateManager.GetOrCreateState(Path);
+                    if (state != null)
+                    {
+                        LoadChildrenFromState(state);
+                        IsExpanded = wasExpanded;
+                        return;
+                    }
+                }
+
+                // Fallback al caricamento standard se non c'è stato
+                var entries = new DirectoryInfo(Path)
+                    .EnumerateFileSystemInfos()
+                    .OrderBy(info => info is not DirectoryInfo)
+                    .ThenBy(info => info.Name);
+
+                foreach (var entry in entries)
+                {
+                    var childNode = new FileSystemNodeViewModel(entry.FullName, entry, stateManager, dispatcher);
+                    childNode.UpdateState(IsChecked, MonitoringStatus);
                     AddChild(childNode);
                 }
 

@@ -99,7 +99,10 @@ namespace FileGuard.Core.Models
                         else
                         {
                             SetStateWithoutPropagation(value == true);
-                            UpdateParentState();
+                            if (Parent is DirectoryNode dirParent)
+                            {
+                                dirParent.PropagateStateToChildren(value == true);
+                            }
                         }
                     }
                     finally
@@ -162,11 +165,6 @@ namespace FileGuard.Core.Models
         protected virtual void PropagateStateToChildren(bool state)
         {
             // Override in DirectoryNode
-        }
-
-        protected virtual void UpdateParentState()
-        {
-            (Parent as DirectoryNode)?.UpdateStateFromChildren();
         }
 
         public void BeginSynchronizing()

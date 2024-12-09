@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json.Serialization;
+using System.Diagnostics;
 
 namespace FileGuard.Core.Models
 {
@@ -23,7 +24,7 @@ namespace FileGuard.Core.Models
         public string? ParentPath { get; set; }
 
         [JsonPropertyName("childStates")]
-        public Dictionary<string, NodeState> ChildStates { get; private set; }
+        public Dictionary<string, NodeState> ChildStates { get; set; }
 
         [JsonIgnore]
         public bool IsDirty { get; set; }
@@ -40,10 +41,18 @@ namespace FileGuard.Core.Models
 
         public void PropagateState(bool? newState, bool updateChildren = true)
         {
+            var oldState = IsChecked;
+            var oldStatus = MonitoringStatus;
+
             IsChecked = newState;
             MonitoringStatus = newState == true ? MonitoringStatus.FullyMonitored :
                              newState == false ? MonitoringStatus.NotMonitored :
                              MonitoringStatus.PartiallyMonitored;
+
+            if (oldState != newState || oldStatus != MonitoringStatus)
+            {
+                Trace.WriteLine($"[NodeState] PropagateState: {Path} => IsChecked: {oldState}->{newState}, Status: {oldStatus}->{MonitoringStatus}");
+            }
 
             if (updateChildren)
             {
@@ -51,6 +60,7 @@ namespace FileGuard.Core.Models
                 {
                     child.PropagateState(newState);
                 }
+                Trace.WriteLine($"[NodeState] PropagateState: {Path} => Propagato a {ChildStates.Count} figli");
             }
             IsDirty = true;
         }
@@ -58,6 +68,9 @@ namespace FileGuard.Core.Models
         public void UpdateFromChildren()
         {
             if (!ChildStates.Any()) return;
+
+            var oldState = IsChecked;
+            var oldStatus = MonitoringStatus;
 
             var allChecked = ChildStates.Values.All(c => c.IsChecked == true);
             var allUnchecked = ChildStates.Values.All(c => c.IsChecked == false);
@@ -69,6 +82,12 @@ namespace FileGuard.Core.Models
                              IsChecked == false ? MonitoringStatus.NotMonitored :
                              MonitoringStatus.PartiallyMonitored;
 
+            if (oldState != IsChecked || oldStatus != MonitoringStatus)
+            {
+                Trace.WriteLine($"[NodeState] UpdateFromChildren: {Path} => IsChecked: {oldState}->{IsChecked}, Status: {oldStatus}->{MonitoringStatus}");
+                Trace.WriteLine($"[NodeState] UpdateFromChildren: {Path} => AllChecked: {allChecked}, AllUnchecked: {allUnchecked}, ChildCount: {ChildStates.Count}");
+            }
+
             IsDirty = true;
         }
 
@@ -76,7 +95,14 @@ namespace FileGuard.Core.Models
         {
             foreach (var child in ChildStates.Values)
             {
+                var oldParent = child.ParentPath;
                 child.ParentPath = Path;
+                
+                if (oldParent != Path)
+                {
+                    Trace.WriteLine($"[NodeState] ValidateHierarchy: {child.Path} => Parent: {oldParent}->{Path}");
+                }
+                
                 child.ValidateHierarchy();
             }
         }

@@ -6,6 +6,7 @@ Il progetto ha una struttura MVVM con:
 - Interfaccia WPF
 - Sistema di persistenza stato (StateManager)
 - Factory per creazione nodi (FileSystemNodeFactory)
+- Sistema di versionamento Git configurato
 
 ### Componenti Principali
 - StateManager: gestione persistenza stato
@@ -23,12 +24,20 @@ Il progetto ha una struttura MVVM con:
 7. Implementata regola generale per gestione stati:
    - Modalità Sincronizzazione: durante caricamento/ripristino
    - Modalità Interattiva: durante interazione utente
+8. Configurato sistema di versionamento:
+   - Repository Git inizializzato e configurato
+   - Script di commit (1-commit.bat) funzionante
+   - Backup automatico durante i commit
 
 ### Problemi Pendenti
-1. Incoerenza nella gestione degli stati:
-   - Gli stati vengono ripristinati ma non propagati correttamente
-   - I quadratini non si aggiornano in modo coerente
-   - Le selezioni non vengono mantenute tra le sessioni
+1. Tree View:
+   - Gestione espansione/collasso nodi da migliorare
+   - Aggiornamento automatico quando cambiano i file
+   - Mantenimento stato espansione tra le sessioni
+
+2. Parte destra (dettagli):
+   - Da implementare visualizzazione dettagli
+   - Da gestire aggiornamenti in tempo reale
 
 ### Regole Generali
 1. Gestione Stati
@@ -51,6 +60,11 @@ Il progetto ha una struttura MVVM con:
    - Salvare lo stato completo dei nodi
    - Validare la gerarchia durante il caricamento
    - Pulire i percorsi non validi
+
+5. Versionamento
+   - Usare 1-commit.bat per tutti i commit
+   - Verificare che il backup venga creato
+   - Mantenere messaggi commit descrittivi
 
 ### Note Implementazione
 - Focus su regole generali, non casi specifici

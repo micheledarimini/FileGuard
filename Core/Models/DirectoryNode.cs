@@ -48,6 +48,7 @@ namespace FileGuard.Core.Models
 
                     if (operationMode == NodeOperationMode.Interactive && stateManager != null)
                     {
+                        Trace.WriteLine($"[DirectoryNode] IsExpanded cambiato: {Path} => {value}");
                         stateManager.UpdateNodeState(Path, MonitoringStatus, IsChecked, isExpanded);
                     }
                 }
@@ -67,6 +68,7 @@ namespace FileGuard.Core.Models
                 
                 if (stateManager != null)
                 {
+                    Trace.WriteLine($"[DirectoryNode] Costruttore: {path}");
                     SyncWithState();
                 }
             }
@@ -79,6 +81,7 @@ namespace FileGuard.Core.Models
         {
             if (e.Path.Equals(Path, StringComparison.OrdinalIgnoreCase))
             {
+                Trace.WriteLine($"[DirectoryNode] SelectionChanged: {Path} => IsChecked: {e.IsChecked}, Status: {e.Status}");
                 SetStateDirectly(e.IsChecked, e.Status);
             }
         }
@@ -91,6 +94,7 @@ namespace FileGuard.Core.Models
                 var state = stateManager?.GetOrCreateState(Path);
                 if (state != null)
                 {
+                    Trace.WriteLine($"[DirectoryNode] SyncWithState: {Path} => IsChecked: {state.IsChecked}, Status: {state.MonitoringStatus}, IsExpanded: {state.IsExpanded}, ChildCount: {state.ChildStates.Count}");
                     SetStateDirectly(state.IsChecked, state.MonitoringStatus);
                     isExpanded = state.IsExpanded;
                 }
@@ -108,12 +112,8 @@ namespace FileGuard.Core.Models
 
         protected override void PropagateStateToChildren(bool state)
         {
+            Trace.WriteLine($"[DirectoryNode] PropagateStateToChildren: {Path} => {state}");
             selectionManager.SetNodeSelection(Path, state);
-        }
-
-        public void UpdateStateFromChildren()
-        {
-            // Non più necessario - gestito da SelectionManager
         }
 
         public void LoadContents(bool forceReload = false)
@@ -123,6 +123,10 @@ namespace FileGuard.Core.Models
             try
             {
                 BeginSynchronizing();
+                Trace.WriteLine($"[DirectoryNode] LoadContents iniziato: {Path}");
+
+                // Carica prima lo stato dal SelectionManager
+                selectionManager.LoadNodeState(Path);
 
                 var entries = new DirectoryInfo(Path)
                     .EnumerateFileSystemInfos()
@@ -140,14 +144,17 @@ namespace FileGuard.Core.Models
                     if (entry is DirectoryInfo dirInfo)
                     {
                         node = new DirectoryNode(childPath, dispatcher, dirInfo, stateManager, selectionManager);
+                        Trace.WriteLine($"[DirectoryNode] LoadContents - Creato nodo directory: {childPath}");
                     }
                     else
                     {
-                        node = new FileNode(childPath, dispatcher);
+                        node = new FileNode(childPath, dispatcher, entry as FileInfo, stateManager, selectionManager);
+                        Trace.WriteLine($"[DirectoryNode] LoadContents - Creato nodo file: {childPath}");
                     }
 
                     if (childState != null)
                     {
+                        Trace.WriteLine($"[DirectoryNode] LoadContents - Child state trovato: {childPath} => IsChecked: {childState.IsChecked}, Status: {childState.MonitoringStatus}, IsExpanded: {childState.IsExpanded}");
                         node.BeginSynchronizing();
                         node.SetStateDirectly(childState.IsChecked, childState.MonitoringStatus);
                         node.EndSynchronizing();
@@ -156,6 +163,10 @@ namespace FileGuard.Core.Models
                         {
                             dirNode.isExpanded = childState.IsExpanded;
                         }
+                    }
+                    else
+                    {
+                        Trace.WriteLine($"[DirectoryNode] LoadContents - Child state non trovato: {childPath}");
                     }
 
                     node.Parent = this;
@@ -166,11 +177,11 @@ namespace FileGuard.Core.Models
                 Children = newChildren;
                 isLoaded = true;
 
-                // Carica lo stato dal SelectionManager
-                selectionManager.LoadNodeState(Path);
+                Trace.WriteLine($"[DirectoryNode] LoadContents completato: {Path} => {newChildren.Count} figli caricati");
             }
             catch (Exception ex) when (ex is IOException || ex is UnauthorizedAccessException)
             {
+                Trace.WriteLine($"[DirectoryNode] LoadContents errore: {Path} => {ex.Message}");
                 Children = new ObservableCollection<FileSystemNode>();
                 children.Add(new DummyNode());
                 isLoaded = false;
@@ -188,6 +199,7 @@ namespace FileGuard.Core.Models
             {
                 if (sender is FileSystemNode node)
                 {
+                    Trace.WriteLine($"[DirectoryNode] Child_PropertyChanged: {node.Path} => IsChecked: {node.IsChecked}, Status: {node.MonitoringStatus}");
                     selectionManager.SetNodeSelection(node.Path, node.IsChecked);
                 }
             }

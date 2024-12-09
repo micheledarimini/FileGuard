@@ -26,7 +26,8 @@ namespace FileGuard.Core.FileSystem
                 return new DirectoryNode(path, dispatcher, info as DirectoryInfo, stateManager, selectionManager);
             }
             
-            return new FileNode(path, dispatcher);
+            // Passa stateManager e selectionManager anche ai FileNode
+            return new FileNode(path, dispatcher, info as FileInfo, stateManager, selectionManager);
         }
     }
 }
