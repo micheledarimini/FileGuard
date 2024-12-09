@@ -1,0 +1,35 @@
+<Application x:Class="FileGuard.Core.UI.App"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:converters="clr-namespace:FileGuard.Core.UI.Converters"
+             StartupUri="MainWindow.xaml">
+    <Application.Resources>
+        <ResourceDictionary>
+            <converters:MonitoringStatusToBoolConverter x:Key="MonitoringStatusToBoolConverter"/>
+            
+            <!-- Stili globali -->
+            <Style TargetType="TreeView">
+                <Setter Property="Background" Value="White"/>
+                <Setter Property="BorderBrush" Value="#DDDDDD"/>
+            </Style>
+            
+            <Style TargetType="DataGrid">
+                <Setter Property="Background" Value="White"/>
+                <Setter Property="BorderBrush" Value="#DDDDDD"/>
+                <Setter Property="GridLinesVisibility" Value="Horizontal"/>
+                <Setter Property="HorizontalGridLinesBrush" Value="#EEEEEE"/>
+            </Style>
+            
+            <Style TargetType="Button">
+                <Setter Property="Background" Value="#F0F0F0"/>
+                <Setter Property="BorderBrush" Value="#CCCCCC"/>
+                <Setter Property="Padding" Value="10,5"/>
+                <Style.Triggers>
+                    <Trigger Property="IsMouseOver" Value="True">
+                        <Setter Property="Background" Value="#E0E0E0"/>
+                    </Trigger>
+                </Style.Triggers>
+            </Style>
+        </ResourceDictionary>
+    </Application.Resources>
+</Application>
