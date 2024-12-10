@@ -44,7 +44,11 @@ echo ESECUZIONE COMMIT E PUSH:
 echo.
 git add .
 git commit -m "!commit_msg!"
+<<<<<<< HEAD
 git push origin main
+=======
+git push origin master
+>>>>>>> 00288fc (Primo commit)
 
 :: Crea cartella backup se non esiste
 if not exist "D:\FileGuard_Backup" mkdir "D:\FileGuard_Backup"

@@ -6,6 +6,7 @@ namespace FileGuard.Core.UI.Components
     public partial class MonitoredItemsView : UserControl
     {
         private TreeViewModel? ViewModel => DataContext as TreeViewModel;
+        private bool isInternalUpdate = false;
 
         public MonitoredItemsView()
         {
@@ -23,20 +24,40 @@ namespace FileGuard.Core.UI.Components
 
         private void TreeViewItem_Expanded(object sender, System.Windows.RoutedEventArgs e)
         {
+            if (isInternalUpdate) return;
+
             if (sender is TreeViewItem item && 
                 item.DataContext is FileSystemNodeViewModel node)
             {
-                node.IsExpanded = true;
-                node.LoadChildren();
+                try
+                {
+                    isInternalUpdate = true;
+                    node.IsExpanded = true;
+                    node.LoadChildren();
+                }
+                finally
+                {
+                    isInternalUpdate = false;
+                }
             }
         }
 
         private void TreeViewItem_Collapsed(object sender, System.Windows.RoutedEventArgs e)
         {
+            if (isInternalUpdate) return;
+
             if (sender is TreeViewItem item && 
                 item.DataContext is FileSystemNodeViewModel node)
             {
-                node.IsExpanded = false;
+                try
+                {
+                    isInternalUpdate = true;
+                    node.IsExpanded = false;
+                }
+                finally
+                {
+                    isInternalUpdate = false;
+                }
             }
         }
     }

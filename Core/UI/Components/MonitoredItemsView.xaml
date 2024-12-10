@@ -38,9 +38,23 @@
 
         <TreeView.ItemContainerStyle>
             <Style TargetType="{x:Type TreeViewItem}">
+<<<<<<< HEAD
                 <Setter Property="IsExpanded" Value="{Binding IsExpanded, Mode=TwoWay}"/>
                 <EventSetter Event="Expanded" Handler="TreeViewItem_Expanded"/>
                 <EventSetter Event="Collapsed" Handler="TreeViewItem_Collapsed"/>
+=======
+                <Setter Property="IsExpanded" Value="{Binding IsExpanded, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                <EventSetter Event="Expanded" Handler="TreeViewItem_Expanded"/>
+                <EventSetter Event="Collapsed" Handler="TreeViewItem_Collapsed"/>
+                <Style.Triggers>
+                    <DataTrigger Binding="{Binding IsExpanded}" Value="True">
+                        <Setter Property="IsExpanded" Value="True"/>
+                    </DataTrigger>
+                    <DataTrigger Binding="{Binding IsExpanded}" Value="False">
+                        <Setter Property="IsExpanded" Value="False"/>
+                    </DataTrigger>
+                </Style.Triggers>
+>>>>>>> 00288fc (Primo commit)
             </Style>
         </TreeView.ItemContainerStyle>
     </TreeView>
