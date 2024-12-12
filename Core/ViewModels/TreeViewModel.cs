@@ -6,12 +6,9 @@ using System.IO;
 using System.Runtime.CompilerServices;
 using System.Windows;
 using FileGuard.Core.Cache;
-<<<<<<< Updated upstream
+using FileGuard.Core.Cache.Config;
 using FileGuard.Core.FileSystem;
 using FileGuard.Core.Interfaces;
-=======
-using FileGuard.Core.Cache.Config;
->>>>>>> Stashed changes
 using FileGuard.Core.Logging;
 using FileGuard.Core.Models;
 using FileGuard.Core.Utilities;

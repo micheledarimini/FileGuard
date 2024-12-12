@@ -3,6 +3,7 @@ using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
 using System.Windows.Threading;
+using System.Diagnostics;
 using FileGuard.Core.Interfaces;
 using FileGuard.Core.Models;
 using FileGuard.Core.Logging;
@@ -92,7 +93,7 @@ namespace FileGuard.Core.ViewModels
             catch (Exception ex)
             {
                 Trace.WriteLine($"[FileSystemNodeViewModel] Errore verifica directory: {path}, {ex.Message}");
-                logger.LogError($"Errore verifica directory: {path}", ex, nameof(FileSystemNodeViewModel));
+                LoggerFactory.GetDefaultLogger().LogError($"Errore verifica directory: {path}", ex, nameof(FileSystemNodeViewModel));
                 return false;
             }
         }
@@ -234,14 +235,15 @@ namespace FileGuard.Core.ViewModels
         public DummyNodeViewModel(Dispatcher? dispatcher = null) 
             : base(string.Empty, dispatcher)
         {
+            var tmpLogger = LoggerFactory.GetDefaultLogger();
             Trace.WriteLine("[DummyNodeViewModel] Creazione nodo dummy");
-            logger.LogDebug("Creazione nodo dummy", nameof(DummyNodeViewModel));
+            tmpLogger.LogDebug("Creazione nodo dummy", nameof(DummyNodeViewModel));
         }
 
         public override void LoadChildren(bool forceReload = false)
         {
             Trace.WriteLine("[DummyNodeViewModel] Tentativo di caricamento figli su nodo dummy ignorato");
-            logger.LogDebug("Tentativo di caricamento figli su nodo dummy ignorato", nameof(DummyNodeViewModel));
+            LoggerFactory.GetDefaultLogger().LogDebug("Tentativo di caricamento figli su nodo dummy ignorato", nameof(DummyNodeViewModel));
         }
     }
 }
