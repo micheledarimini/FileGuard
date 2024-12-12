@@ -2,11 +2,12 @@ using System;
 
 namespace FileGuard.Core.Logging
 {
-    public interface ILogger : IDisposable
+    public interface ILogger
     {
-        void LogDebug(string message, string context = "");
-        void LogError(string message, Exception ex, string context = "");
-        void LogWarning(string message, string context = "");
-        void LogInfo(string message, string context = "");
+        void Log(string message);
+        void LogDebug(string message, params object[] args);
+        void LogInfo(string message, params object[] args);
+        void LogWarning(string message, params object[] args);
+        void LogError(string message, Exception exception = null, params object[] args);
     }
 }
