@@ -5,20 +5,18 @@ using System.IO;
 using System.Linq;
 using System.Windows;
 using FileGuard.Core.Logging;
-using FileGuard.Core.Models;
 using FileGuard.Core.Utilities;
 using FileGuard.Core.ViewModels;
-using FileGuard.Core.Interfaces;
 
-namespace FileGuard.Core.FileSystem
+namespace FileGuard.Core.Modules.EventTable
 {
-    public class FileSystemEventProcessor
+    public class EventProcessor
     {
         private readonly ObservableCollection<FileChangeInfo> _changes;
         private readonly ILogger _logger;
         private const int MaxChanges = 1000;
 
-        public FileSystemEventProcessor(ObservableCollection<FileChangeInfo> changes, ILogger? logger = null)
+        public EventProcessor(ObservableCollection<FileChangeInfo> changes, ILogger? logger = null)
         {
             _changes = changes;
             _logger = logger ?? LoggerFactory.GetDefaultLogger();
@@ -37,7 +35,7 @@ namespace FileGuard.Core.FileSystem
                     var changeInfo = CreateChangeInfo(e);
                     AddChange(changeInfo);
                 });
-            }, _logger, nameof(FileSystemEventProcessor), "ProcessChange");
+            }, _logger, nameof(EventProcessor), "ProcessChange");
         }
 
         private FileChangeInfo CreateChangeInfo(FileSystemEventArgs e)
@@ -88,7 +86,7 @@ namespace FileGuard.Core.FileSystem
                         break;
                     }
                 }
-            }, _logger, nameof(FileSystemEventProcessor), "UpdateNodes");
+            }, _logger, nameof(EventProcessor), "UpdateNodes");
         }
 
         private void UpdateNodePreservingState(FileSystemNodeViewModel node, string changedPath)

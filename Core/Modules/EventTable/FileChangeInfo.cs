@@ -1,6 +1,6 @@
 using System;
 
-namespace FileGuard.Core.Models
+namespace FileGuard.Core.Modules.EventTable
 {
     public class FileChangeInfo
     {

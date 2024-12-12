@@ -1,6 +1,6 @@
 using System.Windows.Controls;
 
-namespace FileGuard.Core.UI.Components
+namespace FileGuard.Core.Modules.EventTable
 {
     public partial class EventsGridView : UserControl
     {

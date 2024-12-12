@@ -10,7 +10,7 @@ using FileGuard.Core.Cache.Config;
 using FileGuard.Core.FileSystem;
 using FileGuard.Core.Interfaces;
 using FileGuard.Core.Logging;
-using FileGuard.Core.Models;
+using FileGuard.Core.Modules.EventTable;
 using FileGuard.Core.Utilities;
 
 namespace FileGuard.Core.ViewModels
@@ -21,7 +21,7 @@ namespace FileGuard.Core.ViewModels
         private readonly IFileSystemMonitor _monitor;
         private readonly IStateManager _stateManager;
         private readonly ILogger _logger;
-        private readonly FileSystemEventProcessor _eventProcessor;
+        private readonly EventProcessor _eventProcessor;
         private ITreeNode? _selectedNode;
         private bool _isMainFolderSelected;
         private ObservableCollection<FileSystemNodeViewModel> _monitoredNodes;
@@ -66,7 +66,7 @@ namespace FileGuard.Core.ViewModels
             _monitor = new FileSystemMonitor();
             _stateManager = new StateManager(new StateManagerConfig(_config.SettingsPath));
             _logger = LoggerFactory.GetDefaultLogger();
-            _eventProcessor = new FileSystemEventProcessor(_fileChanges, _logger);
+            _eventProcessor = new EventProcessor(_fileChanges, _logger);
 
             _monitor.FileSystemChanged += OnFileSystemChanged;
             IsMainFolderSelected = false;

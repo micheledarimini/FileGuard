@@ -6,6 +6,7 @@
         xmlns:local="clr-namespace:FileGuard.Core.UI"
         xmlns:components="clr-namespace:FileGuard.Core.UI.Components"
         xmlns:converters="clr-namespace:FileGuard.Core.UI.Converters"
+        xmlns:eventTable="clr-namespace:FileGuard.Core.Modules.EventTable"
         mc:Ignorable="d"
         Title="FileGuard" 
         Height="1080" Width="1920"
@@ -113,7 +114,7 @@
                          HorizontalAlignment="Stretch"/>
 
             <!-- Events Grid -->
-            <components:EventsGridView Grid.Column="2" 
+            <eventTable:EventsGridView Grid.Column="2" 
                                      DataContext="{Binding}"/>
         </Grid>
     </DockPanel>

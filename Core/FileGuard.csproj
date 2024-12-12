@@ -49,6 +49,11 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
+
+    <Page Include="Modules\**\*.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
   </ItemGroup>
 
   <Target Name="CleanTemp" BeforeTargets="Clean">
