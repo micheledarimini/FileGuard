@@ -19,6 +19,18 @@ bld/
 [Ll]og/
 [Ll]ogs/
 
+## Test files
+[Tt]ests/
+[Tt]est[Rr]esults/
+test_logs/
+test_monitoring/
+*.test.*
+*.[Tt]est.*
+*.[Tt]ests.*
+
 ## Backup files
 FileGuard_Backup/
 *.zip
+
+## Log files
+*.log
