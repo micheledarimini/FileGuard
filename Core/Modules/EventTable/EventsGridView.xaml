@@ -4,49 +4,171 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              mc:Ignorable="d" 
-             d:DesignHeight="450" d:DesignWidth="800">
-    
-    <DataGrid ItemsSource="{Binding FileChanges}"
-              AutoGenerateColumns="False"
-              IsReadOnly="True"
-              EnableRowVirtualization="True"
-              VirtualizingPanel.IsVirtualizing="True"
-              VirtualizingPanel.VirtualizationMode="Recycling"
-              ScrollViewer.CanContentScroll="True"
-              ScrollViewer.IsDeferredScrollingEnabled="True"
-              Margin="5">
-        <DataGrid.Columns>
-            <DataGridTextColumn Header="Timestamp" 
-                              Binding="{Binding Timestamp, StringFormat={}{0:dd/MM/yyyy HH:mm:ss}}" 
-                              Width="150"/>
-            <DataGridTextColumn Header="Tipo" 
-                              Binding="{Binding Type}" 
-                              Width="100"/>
-            <DataGridTextColumn Header="Percorso" 
-                              Binding="{Binding Path}" 
-                              Width="*"/>
-            <DataGridTextColumn Header="Descrizione" 
-                              Binding="{Binding Description}" 
-                              Width="200"/>
-        </DataGrid.Columns>
+             d:DesignHeight="450" d:DesignWidth="800"
+             x:Name="Root">
 
-        <DataGrid.RowStyle>
-            <Style TargetType="DataGridRow">
-                <Style.Triggers>
-                    <DataTrigger Binding="{Binding Type}" Value="Created">
-                        <Setter Property="Background" Value="#E8F5E9"/>
-                    </DataTrigger>
-                    <DataTrigger Binding="{Binding Type}" Value="Deleted">
-                        <Setter Property="Background" Value="#FFEBEE"/>
-                    </DataTrigger>
-                    <DataTrigger Binding="{Binding Type}" Value="Changed">
-                        <Setter Property="Background" Value="#E3F2FD"/>
-                    </DataTrigger>
-                    <DataTrigger Binding="{Binding Type}" Value="Renamed">
-                        <Setter Property="Background" Value="#FFF3E0"/>
-                    </DataTrigger>
-                </Style.Triggers>
-            </Style>
-        </DataGrid.RowStyle>
-    </DataGrid>
+    <DockPanel>
+        <!-- Barra Superiore -->
+        <Border DockPanel.Dock="Top" 
+                Background="#F5F5F5" 
+                Padding="10,5"
+                Margin="5,5,5,0">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="250"/>
+                    <ColumnDefinition Width="150"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <!-- Campo Ricerca -->
+                <TextBox Grid.Column="0" 
+                         Name="SearchBox"
+                         Text="{Binding ElementName=Root, Path=SearchText, UpdateSourceTrigger=PropertyChanged}"
+                         Margin="0,0,10,0"
+                         Padding="5"
+                         VerticalAlignment="Center">
+                    <TextBox.Style>
+                        <Style TargetType="TextBox">
+                            <Setter Property="Template">
+                                <Setter.Value>
+                                    <ControlTemplate TargetType="TextBox">
+                                        <Border Background="White" 
+                                                BorderBrush="#DDDDDD" 
+                                                BorderThickness="1" 
+                                                CornerRadius="4">
+                                            <Grid>
+                                                <TextBox Text="{Binding Path=Text, RelativeSource={RelativeSource TemplatedParent}, UpdateSourceTrigger=PropertyChanged}"
+                                                         Background="Transparent"
+                                                         BorderThickness="0"
+                                                         Padding="{TemplateBinding Padding}"/>
+                                                <TextBlock Text="Cerca in tutti i campi..." 
+                                                           Foreground="Gray"
+                                                           Margin="5,0,0,0"
+                                                           VerticalAlignment="Center">
+                                                    <TextBlock.Style>
+                                                        <Style TargetType="TextBlock">
+                                                            <Setter Property="Visibility" Value="Collapsed"/>
+                                                            <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding Text, RelativeSource={RelativeSource AncestorType=TextBox}}" Value="">
+                                                                    <Setter Property="Visibility" Value="Visible"/>
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </TextBlock.Style>
+                                                </TextBlock>
+                                            </Grid>
+                                        </Border>
+                                    </ControlTemplate>
+                                </Setter.Value>
+                            </Setter>
+                        </Style>
+                    </TextBox.Style>
+                </TextBox>
+
+                <!-- Filtro Tipo -->
+                <ComboBox Grid.Column="1" 
+                          Name="TypeFilter"
+                          SelectedValue="{Binding ElementName=Root, Path=SelectedEventType}"
+                          SelectedValuePath="Content"
+                          Margin="0,0,10,0"
+                          Padding="5"
+                          VerticalAlignment="Center">
+                    <ComboBoxItem>Tutti</ComboBoxItem>
+                    <ComboBoxItem>Created</ComboBoxItem>
+                    <ComboBoxItem>Changed</ComboBoxItem>
+                    <ComboBoxItem>Deleted</ComboBoxItem>
+                    <ComboBoxItem>Renamed</ComboBoxItem>
+                </ComboBox>
+
+                <!-- Filtro Data Da -->
+                <StackPanel Grid.Column="2" 
+                          Orientation="Horizontal" 
+                          Margin="0,0,10,0">
+                    <TextBlock Text="Da:" 
+                             VerticalAlignment="Center" 
+                             Margin="0,0,5,0"/>
+                    <DatePicker Name="FromDatePicker"
+                              SelectedDate="{Binding ElementName=Root, Path=FromDate}"
+                              Width="120"
+                              VerticalAlignment="Center"/>
+                </StackPanel>
+
+                <!-- Filtro Data A -->
+                <StackPanel Grid.Column="3" 
+                          Orientation="Horizontal" 
+                          Margin="0,0,10,0">
+                    <TextBlock Text="A:" 
+                             VerticalAlignment="Center" 
+                             Margin="0,0,5,0"/>
+                    <DatePicker Name="ToDatePicker"
+                              SelectedDate="{Binding ElementName=Root, Path=ToDate}"
+                              Width="120"
+                              VerticalAlignment="Center"/>
+                </StackPanel>
+
+                <!-- Menu Opzioni -->
+                <Button Grid.Column="5" 
+                        Name="OptionsButton"
+                        Width="32" 
+                        Height="32"
+                        Background="Transparent"
+                        BorderThickness="0"
+                        VerticalAlignment="Center">
+                    <TextBlock Text="⋮" 
+                             FontSize="20" 
+                             VerticalAlignment="Center"
+                             HorizontalAlignment="Center"/>
+                </Button>
+            </Grid>
+        </Border>
+
+        <!-- Tabella Eventi -->
+        <DataGrid x:Name="EventsGrid"
+                  ItemsSource="{Binding FileChanges}"
+                  AutoGenerateColumns="False"
+                  IsReadOnly="True"
+                  EnableRowVirtualization="True"
+                  VirtualizingPanel.IsVirtualizing="True"
+                  VirtualizingPanel.VirtualizationMode="Recycling"
+                  ScrollViewer.CanContentScroll="True"
+                  ScrollViewer.IsDeferredScrollingEnabled="True"
+                  Margin="5">
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="Timestamp" 
+                                  Binding="{Binding Timestamp, StringFormat={}{0:dd/MM/yyyy HH:mm:ss}}" 
+                                  Width="150"/>
+                <DataGridTextColumn Header="Tipo" 
+                                  Binding="{Binding Type}" 
+                                  Width="100"/>
+                <DataGridTextColumn Header="Percorso" 
+                                  Binding="{Binding Path}" 
+                                  Width="*"/>
+                <DataGridTextColumn Header="Descrizione" 
+                                  Binding="{Binding Description}" 
+                                  Width="200"/>
+            </DataGrid.Columns>
+
+            <DataGrid.RowStyle>
+                <Style TargetType="DataGridRow">
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding Type}" Value="Created">
+                            <Setter Property="Background" Value="#E8F5E9"/>
+                        </DataTrigger>
+                        <DataTrigger Binding="{Binding Type}" Value="Deleted">
+                            <Setter Property="Background" Value="#FFEBEE"/>
+                        </DataTrigger>
+                        <DataTrigger Binding="{Binding Type}" Value="Changed">
+                            <Setter Property="Background" Value="#E3F2FD"/>
+                        </DataTrigger>
+                        <DataTrigger Binding="{Binding Type}" Value="Renamed">
+                            <Setter Property="Background" Value="#FFF3E0"/>
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </DataGrid.RowStyle>
+        </DataGrid>
+    </DockPanel>
 </UserControl>
