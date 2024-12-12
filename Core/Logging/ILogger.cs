@@ -2,7 +2,7 @@ using System;
 
 namespace FileGuard.Core.Logging
 {
-    public interface ILogger
+    public interface ILogger : IDisposable
     {
         void LogDebug(string message, string context = "");
         void LogError(string message, Exception ex, string context = "");

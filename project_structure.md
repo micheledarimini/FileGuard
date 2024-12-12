@@ -4,17 +4,18 @@
 Il progetto ha una struttura MVVM con:
 - Gestione filesystem (FileSystemManager)
 - Interfaccia WPF
-- Sistema di persistenza stato (StateManager)
+- Sistema di persistenza stato (StateManager con configurazione integrata)
 - Factory per creazione nodi (FileSystemNodeFactory)
 - Sistema di versionamento Git configurato
 - Gestione icone base implementata
 
 ### Componenti Principali
-- StateManager: gestione persistenza stato
+- StateManager: gestione persistenza stato con configurazione integrata
 - DirectoryNode: gestione gerarchia e propagazione
 - TreeViewModel: coordinamento UI e logica
 - FileSystemNodeFactory: creazione nodi con stato
 - IconConverter: gestione icone file e cartelle
+- EventsGridView e StatisticsPanel: componenti UI attivi per monitoraggio
 
 ### Problemi Risolti
 1. Implementata gestione stato intermedio (quadratini grigi)
@@ -23,9 +24,10 @@ Il progetto ha una struttura MVVM con:
 4. Implementata struttura gerarchica per gli stati
 5. Migliorata gestione concorrenza
 6. Centralizzata logica di gestione stato
-7. Implementata regola generale per gestione stati:
-   - Modalità Sincronizzazione: durante caricamento/ripristino
-   - Modalità Interattiva: durante interazione utente
+7. Ottimizzata gestione configurazione:
+   - Integrato StateManagerConfig in StateManager
+   - Migliorata organizzazione namespace
+   - Ridotta duplicazione codice
 8. Configurato sistema di versionamento:
    - Repository Git inizializzato e configurato
    - Script di commit (1-commit.bat) funzionante
@@ -57,6 +59,7 @@ Il progetto ha una struttura MVVM con:
    - Evitare logica duplicata
    - Usare interfacce per disaccoppiamento
    - Centralizzare la gestione dello stato in StateManager
+   - Integrare configurazioni nei rispettivi componenti
 
 3. Gestione Eventi
    - Propagare eventi solo quando necessario
@@ -80,13 +83,13 @@ Il progetto ha una struttura MVVM con:
 - Gestire correttamente le dipendenze
 - Documentare le scelte implementative
 - Preferire soluzioni semplici e non invasive
+- Integrare configurazioni nei componenti principali
 
 ## Struttura Directory
 ```
 Core/
 ├── Cache/
-│   ├── StateManager.cs        # Gestione persistenza
-│   └── StateManagerConfig.cs  # Configurazione
+│   └── StateManager.cs        # Gestione persistenza con config integrata
 ├── FileSystem/
 │   ├── FileSystemEventHandler.cs
 │   ├── FileSystemManager.cs   # Gestione filesystem
@@ -108,6 +111,10 @@ Core/
 │   └── NodeState.cs          # Stato nodo
 ├── UI/
 │   ├── Components/
+│   │   ├── EventsGridView.xaml    # Visualizzazione eventi
+│   │   ├── EventsGridView.xaml.cs
+│   │   ├── StatisticsPanel.xaml   # Pannello statistiche
+│   │   ├── StatisticsPanel.xaml.cs
 │   │   ├── NewFilePopup.xaml
 │   │   └── NewFilePopup.xaml.cs
 │   ├── Converters/

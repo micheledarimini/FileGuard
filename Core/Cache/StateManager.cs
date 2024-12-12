@@ -7,6 +7,19 @@ using System.Diagnostics;
 using FileGuard.Core.Models;
 using FileGuard.Core.Interfaces;
 
+namespace FileGuard.Core.Cache.Config
+{
+    public class StateManagerConfig
+    {
+        public string SettingsPath { get; }
+
+        public StateManagerConfig(string settingsPath)
+        {
+            SettingsPath = settingsPath;
+        }
+    }
+}
+
 namespace FileGuard.Core.Cache
 {
     public class StateManager : IStateManager, IDisposable
@@ -24,7 +37,7 @@ namespace FileGuard.Core.Cache
             PropertyNameCaseInsensitive = true
         };
 
-        public StateManager(StateManagerConfig config)
+        public StateManager(Config.StateManagerConfig config)
         {
             settingsPath = config?.SettingsPath ?? throw new ArgumentNullException(nameof(config));
             monitoredPaths = LoadState();

@@ -48,7 +48,7 @@ namespace FileGuard.Core.FileSystem
 
             try
             {
-                var node = FindNode(path);
+                var node = FindNodeUnified(path);
                 if (node == null)
                 {
                     Debug.WriteLine($"FileSystemManager: Ricerca nodo per path = {path}");
@@ -61,7 +61,6 @@ namespace FileGuard.Core.FileSystem
                         Debug.WriteLine($"FileSystemManager: Aggiunto nuovo nodo = {path}");
                         OnPropertyChanged(nameof(MonitoredNodes));
 
-                        // Crea e avvia il watcher per questa directory
                         CreateWatcher(path);
                     }
                 }
@@ -77,13 +76,12 @@ namespace FileGuard.Core.FileSystem
         {
             if (string.IsNullOrEmpty(path)) return;
 
-            var node = FindNode(path);
+            var node = FindNodeUnified(path);
             if (node != null)
             {
                 monitoredNodes.Remove(node);
                 OnPropertyChanged(nameof(MonitoredNodes));
 
-                // Rimuovi e disponi il watcher
                 if (watchers.TryRemove(path, out var watcher))
                 {
                     watcher.Dispose();
@@ -130,9 +128,8 @@ namespace FileGuard.Core.FileSystem
                     Debug.WriteLine($"FileSystemManager: Evento filesystem - {e.ChangeType}: {e.FullPath}");
                     OnFileSystemChanged(e);
 
-                    // Aggiorna il nodo appropriato
                     var parentPath = Path.GetDirectoryName(e.FullPath);
-                    var parentNode = FindNode(parentPath ?? string.Empty);
+                    var parentNode = FindNodeUnified(parentPath ?? string.Empty);
                     
                     if (parentNode is DirectoryNode dirNode)
                     {
@@ -154,7 +151,6 @@ namespace FileGuard.Core.FileSystem
             {
                 try
                 {
-                    // Riavvia il watcher
                     watcher.EnableRaisingEvents = false;
                     watcher.EnableRaisingEvents = true;
                 }
@@ -165,6 +161,73 @@ namespace FileGuard.Core.FileSystem
             }
         }
 
+        // Nuovo metodo unificato per la ricerca dei nodi
+        private FileSystemNode? FindNodeUnified(string path, FileSystemNode? startNode = null)
+        {
+            if (string.IsNullOrEmpty(path)) return null;
+
+            Debug.WriteLine($"FileSystemManager: FindNodeUnified - Ricerca path = {path}, startNode = {startNode?.Path ?? "null"}");
+
+            // Se non è specificato un nodo di partenza, cerca tra i nodi monitorati
+            if (startNode == null)
+            {
+                foreach (var node in monitoredNodes)
+                {
+                    if (node.Path.Equals(path, StringComparison.OrdinalIgnoreCase))
+                    {
+                        Debug.WriteLine($"FileSystemManager: FindNodeUnified - Trovato nodo root = {path}");
+                        return node;
+                    }
+
+                    // Ottimizzazione: controlla se il percorso inizia con il percorso del nodo corrente
+                    if (node is DirectoryNode dirNode && path.StartsWith(dirNode.Path, StringComparison.OrdinalIgnoreCase))
+                    {
+                        var result = FindNodeUnified(path, dirNode);
+                        if (result != null)
+                        {
+                            Debug.WriteLine($"FileSystemManager: FindNodeUnified - Trovato nodo in sottodirectory = {path}");
+                            return result;
+                        }
+                    }
+                }
+                Debug.WriteLine($"FileSystemManager: FindNodeUnified - Nodo non trovato = {path}");
+                return null;
+            }
+
+            // Se il nodo di partenza corrisponde al percorso cercato
+            if (startNode.Path.Equals(path, StringComparison.OrdinalIgnoreCase))
+            {
+                Debug.WriteLine($"FileSystemManager: FindNodeUnified - Trovato nodo startNode = {path}");
+                return startNode;
+            }
+
+            // Se il nodo di partenza è una directory, cerca nei suoi figli
+            if (startNode is DirectoryNode dirStartNode)
+            {
+                foreach (var child in dirStartNode.Children)
+                {
+                    if (child.Path.Equals(path, StringComparison.OrdinalIgnoreCase))
+                    {
+                        Debug.WriteLine($"FileSystemManager: FindNodeUnified - Trovato nodo child = {path}");
+                        return child;
+                    }
+
+                    if (child is DirectoryNode childDirNode && path.StartsWith(childDirNode.Path, StringComparison.OrdinalIgnoreCase))
+                    {
+                        var result = FindNodeUnified(path, childDirNode);
+                        if (result != null)
+                        {
+                            return result;
+                        }
+                    }
+                }
+            }
+
+            return null;
+        }
+
+        // Metodi originali mantenuti temporaneamente per riferimento
+        // TODO: Rimuovere dopo aver verificato che FindNodeUnified funziona correttamente
         private FileSystemNode? FindNode(string path)
         {
             foreach (var node in monitoredNodes)
@@ -223,7 +286,6 @@ namespace FileGuard.Core.FileSystem
 
             try
             {
-                // Disponi tutti i watchers
                 foreach (var watcher in watchers.Values)
                 {
                     watcher.Dispose();

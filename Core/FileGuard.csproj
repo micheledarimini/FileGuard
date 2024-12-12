@@ -13,19 +13,30 @@
     <SupportedOSPlatformVersion>7.0</SupportedOSPlatformVersion>
     <NoWarn>CA1416</NoWarn>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <GenerateTargetFrameworkAttribute>false</GenerateTargetFrameworkAttribute>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <LogDirectory>$(LocalAppData)\FileGuard\Logs</LogDirectory>
+    <MaxLogFileSize>10485760</MaxLogFileSize>
+    <MaxLogFiles>5</MaxLogFiles>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
-    <OutputPath>D:\FileGuard\Build\Debug\</OutputPath>
+    <OutputPath>Build\Debug\</OutputPath>
     <DebugType>full</DebugType>
     <DebugSymbols>true</DebugSymbols>
+    <LogLevel>Debug</LogLevel>
+    <LogFilePattern>debug_{0:yyyy-MM-dd}.log</LogFilePattern>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
-    <OutputPath>D:\FileGuard\Build\Release\</OutputPath>
+    <OutputPath>Build\Release\</OutputPath>
     <DebugType>none</DebugType>
     <DebugSymbols>false</DebugSymbols>
     <Optimize>true</Optimize>
+    <LogLevel>Info</LogLevel>
+    <LogFilePattern>release_{0:yyyy-MM-dd}.log</LogFilePattern>
   </PropertyGroup>
 
   <ItemGroup>
@@ -39,5 +50,10 @@
       <SubType>Designer</SubType>
     </Page>
   </ItemGroup>
+
+  <Target Name="CleanTemp" BeforeTargets="Clean">
+    <RemoveDir Directories="$(BaseIntermediateOutputPath)" />
+    <RemoveDir Directories="$(BaseOutputPath)" />
+  </Target>
 
 </Project>
