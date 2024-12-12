@@ -1,0 +1,43 @@
+<UserControl x:Class="FileGuard.Core.UI.Components.Monitoring.MonitoredItemsView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:vm="clr-namespace:FileGuard.Core.ViewModels"
+             xmlns:converters="clr-namespace:FileGuard.Core.UI.Converters"
+             mc:Ignorable="d" 
+             d:DesignHeight="450" d:DesignWidth="480">
+    
+    <TreeView x:Name="folderTreeView"
+              ItemsSource="{Binding MonitoredNodes}"
+              SelectedItemChanged="FolderTreeView_SelectedItemChanged"
+              VirtualizingPanel.IsVirtualizing="True"
+              VirtualizingPanel.VirtualizationMode="Recycling"
+              ScrollViewer.CanContentScroll="True"
+              ScrollViewer.IsDeferredScrollingEnabled="True"
+              Margin="5">
+        <TreeView.Resources>
+            <HierarchicalDataTemplate DataType="{x:Type vm:FileSystemNodeViewModel}"
+                                    ItemsSource="{Binding Children}">
+                <StackPanel Orientation="Horizontal">
+                    <CheckBox IsChecked="{Binding IsChecked}" 
+                            Tag="{Binding}"
+                            VerticalAlignment="Center"/>
+                    <Image Source="{Binding Path, Converter={StaticResource IconConverter}}"
+                           Width="16" Height="16" Margin="4,0"/>
+                    <TextBlock Text="{Binding DisplayName}" 
+                             VerticalAlignment="Center"
+                             ToolTip="{Binding Path}"/>
+                </StackPanel>
+            </HierarchicalDataTemplate>
+        </TreeView.Resources>
+
+        <TreeView.ItemContainerStyle>
+            <Style TargetType="{x:Type TreeViewItem}">
+                <Setter Property="IsExpanded" Value="{Binding IsExpanded, Mode=TwoWay}"/>
+                <EventSetter Event="Expanded" Handler="TreeViewItem_Expanded"/>
+                <EventSetter Event="Collapsed" Handler="TreeViewItem_Collapsed"/>
+            </Style>
+        </TreeView.ItemContainerStyle>
+    </TreeView>
+</UserControl>
